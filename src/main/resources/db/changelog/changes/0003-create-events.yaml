@@ -54,6 +54,9 @@ databaseChangeLog:
                   type: TIMESTAMP WITH TIME ZONE
                   constraints:
                     nullable: false
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMP WITH TIME ZONE
         - addForeignKeyConstraint:
             baseTableName: events
             baseColumnNames: owner

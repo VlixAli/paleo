@@ -4,6 +4,7 @@ import com.VlixAli.paleo.dto.request.EventCreateRequest;
 import com.VlixAli.paleo.entity.Event;
 import com.VlixAli.paleo.entity.EventStatus;
 import com.VlixAli.paleo.entity.User;
+import com.VlixAli.paleo.exception.EventNotFoundException;
 import com.VlixAli.paleo.mapper.EventMapperImpl;
 import com.VlixAli.paleo.repository.EventRepository;
 import org.junit.jupiter.api.Test;
@@ -13,8 +14,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -94,9 +93,7 @@ class EventServiceTest {
                 .thenReturn(Optional.of(eventOwnedBy(userWithId(UUID.randomUUID()), EventStatus.DRAFT)));
 
         assertThatThrownBy(() -> eventService.publish(null, UUID.randomUUID()))
-                .isInstanceOf(ResponseStatusException.class)
-                .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode())
-                        .isEqualTo(HttpStatus.FORBIDDEN));
+                .isInstanceOf(EventNotFoundException.class);
     }
 
     private static User userWithId(UUID id) {

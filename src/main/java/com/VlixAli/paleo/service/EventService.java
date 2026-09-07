@@ -5,14 +5,13 @@ import com.VlixAli.paleo.dto.response.EventResponse;
 import com.VlixAli.paleo.entity.Event;
 import com.VlixAli.paleo.entity.EventStatus;
 import com.VlixAli.paleo.entity.User;
+import com.VlixAli.paleo.exception.EventNotFoundException;
 import com.VlixAli.paleo.mapper.EventMapper;
 import com.VlixAli.paleo.repository.EventRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.UUID;
@@ -46,6 +45,11 @@ public class EventService {
         return changeStatus(authentication, id, EventStatus.DRAFT);
     }
 
+    @Transactional
+    public void delete(Authentication authentication, UUID id) {
+        eventRepository.delete(getOwnedEvent(authentication, id));
+    }
+
     private EventResponse changeStatus(Authentication authentication, UUID id, EventStatus status) {
         Event event = getOwnedEvent(authentication, id);
         event.setStatus(status);
@@ -54,10 +58,10 @@ public class EventService {
 
     private Event getOwnedEvent(Authentication authentication, UUID id) {
         Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "event not found"));
+                .orElseThrow(() -> new EventNotFoundException(id));
         User current = userService.getOrCreateCurrentUser(authentication);
         if (!event.getOwner().getId().equals(current.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "you are not the owner of this event");
+            throw new EventNotFoundException(id);
         }
         return event;
     }
@@ -73,6 +77,6 @@ public class EventService {
     public EventResponse getById(UUID id) {
         return eventRepository.findById(id)
                 .map(eventMapper::eventToEventResponse)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "event not found"));
+                .orElseThrow(() -> new EventNotFoundException(id));
     }
 }
