@@ -1,9 +1,10 @@
-package com.VlixAli.paleo.service;
+package com.VlixAli.paleo.service.integration;
 
 import com.VlixAli.paleo.dto.request.UserUpdateRequest;
 import com.VlixAli.paleo.entity.User;
 import com.VlixAli.paleo.mapper.UserMapperImpl;
 import com.VlixAli.paleo.repository.UserRepository;
+import com.VlixAli.paleo.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;

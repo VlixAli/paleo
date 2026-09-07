@@ -1,4 +1,4 @@
-package com.VlixAli.paleo.service;
+package com.VlixAli.paleo.service.integration;
 
 import com.VlixAli.paleo.entity.Event;
 import com.VlixAli.paleo.entity.EventStatus;
@@ -8,6 +8,8 @@ import com.VlixAli.paleo.mapper.EventMapperImpl;
 import com.VlixAli.paleo.mapper.UserMapperImpl;
 import com.VlixAli.paleo.repository.EventRepository;
 import com.VlixAli.paleo.repository.UserRepository;
+import com.VlixAli.paleo.service.EventService;
+import com.VlixAli.paleo.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -22,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest(properties = "spring.jpa.hibernate.ddl-auto=none")
 @Import({EventService.class, UserService.class, EventMapperImpl.class, UserMapperImpl.class})
-class EventServiceSoftDeleteTest {
+class EventServiceIntegrationTest {
 
     @Autowired
     private EventRepository eventRepository;

@@ -1,4 +1,4 @@
-package com.VlixAli.paleo.service;
+package com.VlixAli.paleo.service.unit;
 
 import com.VlixAli.paleo.dto.request.EventCreateRequest;
 import com.VlixAli.paleo.entity.Event;
@@ -7,6 +7,8 @@ import com.VlixAli.paleo.entity.User;
 import com.VlixAli.paleo.exception.EventNotFoundException;
 import com.VlixAli.paleo.mapper.EventMapperImpl;
 import com.VlixAli.paleo.repository.EventRepository;
+import com.VlixAli.paleo.service.EventService;
+import com.VlixAli.paleo.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
