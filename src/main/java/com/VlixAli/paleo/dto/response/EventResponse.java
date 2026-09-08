@@ -16,6 +16,7 @@ public record EventResponse(
         Integer capacity,
         UUID owner,
         EventStatus status,
-        Instant createdAt
+        Instant createdAt,
+        Instant updatedAt
 ) {
 }

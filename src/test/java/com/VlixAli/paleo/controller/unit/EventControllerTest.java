@@ -144,7 +144,7 @@ class EventControllerTest {
     private static EventResponse response(EventStatus status) {
         return new EventResponse(UUID.randomUUID(), "t", "d", "c", "l",
                 Instant.parse("2030-01-01T10:00:00Z"), Instant.parse("2030-01-01T12:00:00Z"),
-                10, UUID.randomUUID(), status, Instant.now());
+                10, UUID.randomUUID(), status, Instant.now(), Instant.now());
     }
 
     private static SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor jwt(

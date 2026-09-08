@@ -1,6 +1,7 @@
 package com.VlixAli.paleo.service;
 
 import com.VlixAli.paleo.dto.request.EventCreateRequest;
+import com.VlixAli.paleo.dto.request.EventUpdateRequest;
 import com.VlixAli.paleo.dto.response.EventResponse;
 import com.VlixAli.paleo.entity.Event;
 import com.VlixAli.paleo.entity.EventStatus;
@@ -13,6 +14,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -50,20 +52,14 @@ public class EventService {
         eventRepository.delete(getOwnedEvent(authentication, id));
     }
 
-    private EventResponse changeStatus(Authentication authentication, UUID id, EventStatus status) {
+    @Transactional
+    public EventResponse update(Authentication authentication, UUID id, EventUpdateRequest request) {
         Event event = getOwnedEvent(authentication, id);
-        event.setStatus(status);
+        Instant start = request.startTime() != null ? request.startTime() : event.getStartTime();
+        Instant end = request.endTime() != null ? request.endTime() : event.getEndTime();
+        validateTimeRange(start, end);
+        eventMapper.updateEventFromRequest(request, event);
         return eventMapper.eventToEventResponse(event);
-    }
-
-    private Event getOwnedEvent(Authentication authentication, UUID id) {
-        Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new EventNotFoundException(id));
-        User current = userService.getOrCreateCurrentUser(authentication);
-        if (!event.getOwner().getId().equals(current.getId())) {
-            throw new EventNotFoundException(id);
-        }
-        return event;
     }
 
     @Transactional(readOnly = true)
@@ -78,5 +74,27 @@ public class EventService {
         return eventRepository.findById(id)
                 .map(eventMapper::eventToEventResponse)
                 .orElseThrow(() -> new EventNotFoundException(id));
+    }
+
+    private Event getOwnedEvent(Authentication authentication, UUID id) {
+        Event event = eventRepository.findById(id)
+                .orElseThrow(() -> new EventNotFoundException(id));
+        User current = userService.getOrCreateCurrentUser(authentication);
+        if (!event.getOwner().getId().equals(current.getId())) {
+            throw new EventNotFoundException(id);
+        }
+        return event;
+    }
+
+    private void validateTimeRange(Instant startTime, Instant endTime) {
+        if (startTime != null && endTime != null && !endTime.isAfter(startTime)) {
+            throw new IllegalArgumentException("endTime must be after startTime");
+        }
+    }
+
+    private EventResponse changeStatus(Authentication authentication, UUID id, EventStatus status) {
+        Event event = getOwnedEvent(authentication, id);
+        event.setStatus(status);
+        return eventMapper.eventToEventResponse(event);
     }
 }

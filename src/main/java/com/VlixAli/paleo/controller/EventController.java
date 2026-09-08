@@ -1,6 +1,7 @@
 package com.VlixAli.paleo.controller;
 
 import com.VlixAli.paleo.dto.request.EventCreateRequest;
+import com.VlixAli.paleo.dto.request.EventUpdateRequest;
 import com.VlixAli.paleo.dto.response.EventResponse;
 import com.VlixAli.paleo.service.EventService;
 import jakarta.validation.Valid;
@@ -9,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -61,5 +63,11 @@ public class EventController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(Authentication authentication, @PathVariable UUID id) {
         eventService.delete(authentication, id);
+    }
+
+    @PatchMapping("/{id}")
+    public EventResponse update(Authentication authentication, @PathVariable UUID id,
+                                @RequestBody @Valid EventUpdateRequest request) {
+        return eventService.update(authentication, id, request);
     }
 }

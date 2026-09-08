@@ -1,24 +1,22 @@
 package com.VlixAli.paleo.dto.request;
 
 import com.VlixAli.paleo.annotation.EndTimeAfterStartTime;
+import com.VlixAli.paleo.annotation.NullOrNotBlank;
 import jakarta.validation.constraints.Future;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 import java.time.Instant;
 
 @EndTimeAfterStartTime
-public record EventCreateRequest(
-        @NotBlank
+public record EventUpdateRequest(
+        @NullOrNotBlank
         String title,
-        @NotBlank
+        @NullOrNotBlank
         String description,
-        @NotBlank
+        @NullOrNotBlank
         String city,
-        @NotBlank
+        @NullOrNotBlank
         String location,
-        @NotNull
         @Future
         Instant startTime,
         @Future
