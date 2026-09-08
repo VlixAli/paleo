@@ -3,6 +3,7 @@ package com.VlixAli.paleo.service.integration;
 import com.VlixAli.paleo.entity.Event;
 import com.VlixAli.paleo.entity.EventStatus;
 import com.VlixAli.paleo.entity.User;
+import com.VlixAli.paleo.dto.request.EventUpdateRequest;
 import com.VlixAli.paleo.exception.EventNotFoundException;
 import com.VlixAli.paleo.mapper.EventMapperImpl;
 import com.VlixAli.paleo.mapper.UserMapperImpl;
@@ -58,6 +59,22 @@ class EventServiceIntegrationTest {
         assertThatThrownBy(() -> eventService.delete(auth("kc-bob", "bob", "Bob"), event.getId()))
                 .isInstanceOf(EventNotFoundException.class);
         assertThat(eventRepository.findById(event.getId())).isPresent();
+    }
+
+    @Test
+    void updatePersistsWithoutExplicitSave() {
+        var owner = user("kc-alice", "alice", "Alice");
+        var event = eventRepository.save(eventOwnedBy(owner, EventStatus.DRAFT));
+
+        var response = eventService.update(auth("kc-alice", "alice", "Alice"), event.getId(),
+                new EventUpdateRequest("new-t", null, null, null, null, null, null));
+
+        assertThat(response.title()).isEqualTo("new-t");
+        var reloaded = eventRepository.findById(event.getId()).orElseThrow();
+        assertThat(reloaded.getTitle()).isEqualTo("new-t");
+        assertThat(reloaded.getStatus()).isEqualTo(EventStatus.DRAFT);
+        assertThat(reloaded.getUpdatedAt()).isNotNull();
+        assertThat(!reloaded.getUpdatedAt().isBefore(reloaded.getCreatedAt())).isTrue();
     }
 
     private User user(String keycloakUserId, String username, String displayName) {

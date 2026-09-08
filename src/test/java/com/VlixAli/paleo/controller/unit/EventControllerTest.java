@@ -2,6 +2,7 @@ package com.VlixAli.paleo.controller.unit;
 
 import com.VlixAli.paleo.controller.EventController;
 import com.VlixAli.paleo.dto.request.EventCreateRequest;
+import com.VlixAli.paleo.dto.request.EventUpdateRequest;
 import com.VlixAli.paleo.dto.response.EventResponse;
 import com.VlixAli.paleo.entity.EventStatus;
 import com.VlixAli.paleo.exception.EventNotFoundException;
@@ -29,6 +30,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -132,6 +134,75 @@ class EventControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(eventService).delete(any(Authentication.class), any(UUID.class));
+    }
+
+    @Test
+    void unauthenticatedPatchReturns401() throws Exception {
+        mockMvc.perform(patch("/api/events/{id}", UUID.randomUUID())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"new\"}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void patchDelegatesAndReturns200() throws Exception {
+        var id = UUID.randomUUID();
+        when(eventService.update(any(), any(), any())).thenReturn(response(EventStatus.DRAFT));
+
+        mockMvc.perform(patch("/api/events/{id}", id)
+                        .with(jwt("kc-alice", "alice"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"new\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("t"))
+                .andExpect(jsonPath("$.status").value("DRAFT"));
+
+        ArgumentCaptor<Authentication> auth = ArgumentCaptor.forClass(Authentication.class);
+        ArgumentCaptor<UUID> uuid = ArgumentCaptor.forClass(UUID.class);
+        ArgumentCaptor<EventUpdateRequest> request = ArgumentCaptor.forClass(EventUpdateRequest.class);
+        verify(eventService).update(auth.capture(), uuid.capture(), request.capture());
+        assertThat(((JwtAuthenticationToken) auth.getValue()).getToken().getSubject())
+                .isEqualTo("kc-alice");
+        assertThat(uuid.getValue()).isEqualTo(id);
+        assertThat(request.getValue().title()).isEqualTo("new");
+    }
+
+    @Test
+    void patchBlankTitleReturns400() throws Exception {
+        mockMvc.perform(patch("/api/events/{id}", UUID.randomUUID())
+                        .with(jwt("kc-alice", "alice"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"  \"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void patchInvertedTimesReturns400() throws Exception {
+        mockMvc.perform(patch("/api/events/{id}", UUID.randomUUID())
+                        .with(jwt("kc-alice", "alice"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"startTime":"2030-01-01T12:00:00Z","endTime":"2030-01-01T10:00:00Z"}\
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.endTime").exists());
+    }
+
+    @Test
+    void patchMissingReturns404() throws Exception {
+        var id = UUID.randomUUID();
+        when(eventService.update(any(), any(), any())).thenThrow(new EventNotFoundException(id));
+
+        mockMvc.perform(patch("/api/events/{id}", id)
+                        .with(jwt("kc-alice", "alice"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"new\"}"))
+                .andExpect(status().isNotFound());
     }
 
     private static String validCreateJson() {

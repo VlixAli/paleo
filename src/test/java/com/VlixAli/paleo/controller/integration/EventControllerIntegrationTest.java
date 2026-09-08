@@ -12,10 +12,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -100,6 +103,80 @@ class EventControllerIntegrationTest {
     @Test
     void unauthenticatedReturns401() throws Exception {
         mockMvc.perform(get("/api/events"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void patchAsOwnerPersists() throws Exception {
+        String id = createEvent("kc-alice", "alice");
+
+        mockMvc.perform(patch("/api/events/{id}", id)
+                        .with(jwt("kc-alice", "alice"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"new\",\"capacity\":20}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("new"))
+                .andExpect(jsonPath("$.capacity").value(20))
+                .andExpect(jsonPath("$.status").value("DRAFT"))
+                .andExpect(jsonPath("$.updatedAt").exists());
+
+        mockMvc.perform(get("/api/events/{id}", id).with(jwt("kc-alice", "alice")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("new"))
+                .andExpect(jsonPath("$.capacity").value(20));
+    }
+
+    @Test
+    void nonOwnerPatchReturns404AndUnchanged() throws Exception {
+        String id = createEvent("kc-alice", "alice");
+
+        mockMvc.perform(patch("/api/events/{id}", id)
+                        .with(jwt("kc-bob", "bob"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"hijacked\"}"))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/api/events/{id}", id).with(jwt("kc-alice", "alice")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("t"));
+    }
+
+    @Test
+    void patchStartPastStoredEndReturns400() throws Exception {
+        String id = createEvent("kc-alice", "alice");
+
+        mockMvc.perform(patch("/api/events/{id}", id)
+                        .with(jwt("kc-alice", "alice"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"startTime\":\"2030-01-01T13:00:00Z\"}"))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/events/{id}", id).with(jwt("kc-alice", "alice")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.startTime").value("2030-01-01T10:00:00Z"));
+    }
+
+    @Test
+    void patchBlankTitleReturns400() throws Exception {
+        String id = createEvent("kc-alice", "alice");
+
+        mockMvc.perform(patch("/api/events/{id}", id)
+                        .with(jwt("kc-alice", "alice"))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"  \"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void unauthenticatedPatchReturns401() throws Exception {
+        mockMvc.perform(patch("/api/events/{id}", UUID.randomUUID())
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"new\"}"))
                 .andExpect(status().isUnauthorized());
     }
 

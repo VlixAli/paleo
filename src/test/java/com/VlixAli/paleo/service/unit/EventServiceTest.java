@@ -1,6 +1,7 @@
 package com.VlixAli.paleo.service.unit;
 
 import com.VlixAli.paleo.dto.request.EventCreateRequest;
+import com.VlixAli.paleo.dto.request.EventUpdateRequest;
 import com.VlixAli.paleo.entity.Event;
 import com.VlixAli.paleo.entity.EventStatus;
 import com.VlixAli.paleo.entity.User;
@@ -95,6 +96,88 @@ class EventServiceTest {
                 .thenReturn(Optional.of(eventOwnedBy(userWithId(UUID.randomUUID()), EventStatus.DRAFT)));
 
         assertThatThrownBy(() -> eventService.publish(null, UUID.randomUUID()))
+                .isInstanceOf(EventNotFoundException.class);
+    }
+
+    @Test
+    void updateAppliesOnlyNonNullFields() {
+        var owner = userWithId(UUID.randomUUID());
+        var event = eventOwnedBy(owner, EventStatus.DRAFT);
+        event.setDescription("orig-d");
+        event.setCity("orig-c");
+        when(userService.getOrCreateCurrentUser(null)).thenReturn(owner);
+        when(eventRepository.findById(any(UUID.class))).thenReturn(Optional.of(event));
+
+        var response = eventService.update(null, event.getId(),
+                new EventUpdateRequest("new-t", null, null, null, null, null, null));
+
+        assertThat(response.title()).isEqualTo("new-t");
+        assertThat(response.description()).isEqualTo("orig-d");
+        assertThat(response.city()).isEqualTo("orig-c");
+        assertThat(response.status()).isEqualTo(EventStatus.DRAFT);
+    }
+
+    @Test
+    void updateKeepsStatusAndOwnership() {
+        var owner = userWithId(UUID.randomUUID());
+        var event = eventOwnedBy(owner, EventStatus.PUBLISHED);
+        when(userService.getOrCreateCurrentUser(null)).thenReturn(owner);
+        when(eventRepository.findById(any(UUID.class))).thenReturn(Optional.of(event));
+
+        var response = eventService.update(null, event.getId(),
+                new EventUpdateRequest("t2", "d2", "c2", "l2",
+                        Instant.parse("2030-02-01T10:00:00Z"), Instant.parse("2030-02-01T12:00:00Z"), 5));
+
+        assertThat(response.status()).isEqualTo(EventStatus.PUBLISHED);
+        assertThat(response.owner()).isEqualTo(owner.getId());
+        assertThat(response.title()).isEqualTo("t2");
+        assertThat(response.capacity()).isEqualTo(5);
+    }
+
+    @Test
+    void updateStartPastStoredEndFails() {
+        var owner = userWithId(UUID.randomUUID());
+        when(userService.getOrCreateCurrentUser(null)).thenReturn(owner);
+        when(eventRepository.findById(any(UUID.class)))
+                .thenReturn(Optional.of(eventOwnedBy(owner, EventStatus.DRAFT)));
+
+        var request = new EventUpdateRequest(null, null, null, null,
+                Instant.parse("2030-01-01T13:00:00Z"), null, null);
+        assertThatThrownBy(() -> eventService.update(null, UUID.randomUUID(), request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("endTime must be after startTime");
+    }
+
+    @Test
+    void updateEndBeforeStoredStartFails() {
+        var owner = userWithId(UUID.randomUUID());
+        when(userService.getOrCreateCurrentUser(null)).thenReturn(owner);
+        when(eventRepository.findById(any(UUID.class)))
+                .thenReturn(Optional.of(eventOwnedBy(owner, EventStatus.DRAFT)));
+
+        var request = new EventUpdateRequest(null, null, null, null,
+                null, Instant.parse("2030-01-01T09:00:00Z"), null);
+        assertThatThrownBy(() -> eventService.update(null, UUID.randomUUID(), request))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void nonOwnerCannotUpdate() {
+        when(userService.getOrCreateCurrentUser(null)).thenReturn(userWithId(UUID.randomUUID()));
+        when(eventRepository.findById(any(UUID.class)))
+                .thenReturn(Optional.of(eventOwnedBy(userWithId(UUID.randomUUID()), EventStatus.DRAFT)));
+
+        var request = new EventUpdateRequest("x", null, null, null, null, null, null);
+        assertThatThrownBy(() -> eventService.update(null, UUID.randomUUID(), request))
+                .isInstanceOf(EventNotFoundException.class);
+    }
+
+    @Test
+    void updateMissingEventThrowsNotFound() {
+        when(eventRepository.findById(any(UUID.class))).thenReturn(Optional.empty());
+
+        var request = new EventUpdateRequest("x", null, null, null, null, null, null);
+        assertThatThrownBy(() -> eventService.update(null, UUID.randomUUID(), request))
                 .isInstanceOf(EventNotFoundException.class);
     }
 
