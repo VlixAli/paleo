@@ -23,12 +23,12 @@ public class UserService {
 
     @Transactional
     public UserResponse me(Authentication authentication) {
-        return userMapper.userToUserResponse(resolveCurrentUser(authentication));
+        return userMapper.userToUserResponse(getOrCreateCurrentUser(authentication));
     }
 
     @Transactional
     public UserResponse updateMe(Authentication authentication, UserUpdateRequest request) {
-        User user = resolveCurrentUser(authentication);
+        User user = getOrCreateCurrentUser(authentication);
         if (request.username() != null && !request.username().equals(user.getUsername())
                 && userRepository.existsByUsername(request.username())) {
             // ponytail: check-then-act race, DB unique constraint is the backstop; catch DataIntegrityViolationException when 409s matter
@@ -38,7 +38,8 @@ public class UserService {
         return userMapper.userToUserResponse(user);
     }
 
-    private User resolveCurrentUser(Authentication authentication) {
+    @Transactional
+    public User getOrCreateCurrentUser(Authentication authentication) {
         Jwt jwt = ((JwtAuthenticationToken) authentication).getToken();
 
         String keycloakUserId = jwt.getSubject();

@@ -1,10 +1,11 @@
-package com.VlixAli.paleo.service;
+package com.VlixAli.paleo.service.unit;
 
 import com.VlixAli.paleo.dto.request.UserUpdateRequest;
 import com.VlixAli.paleo.dto.response.UserResponse;
 import com.VlixAli.paleo.entity.User;
 import com.VlixAli.paleo.mapper.UserMapperImpl;
 import com.VlixAli.paleo.repository.UserRepository;
+import com.VlixAli.paleo.service.UserService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
