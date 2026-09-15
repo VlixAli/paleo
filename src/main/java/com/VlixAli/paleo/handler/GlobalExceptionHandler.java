@@ -2,6 +2,7 @@ package com.VlixAli.paleo.handler;
 
 import com.VlixAli.paleo.dto.response.ErrorResponse;
 import com.VlixAli.paleo.exception.EventNotFoundException;
+import com.VlixAli.paleo.exception.EventNotJoinableException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -41,6 +42,16 @@ public class GlobalExceptionHandler {
                 .status("failed")
                 .messages(List.of(exception.getMessage()))
                 .statusCode(HttpStatus.NOT_FOUND.value())
+                .build();
+    }
+
+    @ExceptionHandler(EventNotJoinableException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse handleEventNotJoinableException(EventNotJoinableException exception){
+        return ErrorResponse.builder()
+                .status("failed")
+                .messages(List.of(exception.getMessage()))
+                .statusCode(HttpStatus.CONFLICT.value())
                 .build();
     }
 
