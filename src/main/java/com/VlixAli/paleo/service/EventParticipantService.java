@@ -11,7 +11,6 @@ import com.VlixAli.paleo.mapper.EventParticipantMapper;
 import com.VlixAli.paleo.repository.EventParticipantRepository;
 import com.VlixAli.paleo.repository.EventRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,15 +41,10 @@ public class EventParticipantService {
                 && participantRepository.countByEventId(eventId) >= event.getCapacity()) {
             throw EventNotJoinableException.eventFull(eventId);
         }
-        try {
-            EventParticipant saved = participantRepository.save(EventParticipant.builder()
-                    .event(event)
-                    .user(user)
-                    .build());
-            return participantMapper.toResponse(saved);
-        } catch (DataIntegrityViolationException e) {
-            // ponytail: best-effort capacity check races; unique constraint is the backstop for duplicates
-            throw EventNotJoinableException.alreadyJoined(eventId);
-        }
+        EventParticipant saved = participantRepository.save(EventParticipant.builder()
+                .event(event)
+                .user(user)
+                .build());
+        return participantMapper.toResponse(saved);
     }
 }
