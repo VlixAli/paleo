@@ -30,7 +30,7 @@ public class EventParticipantService {
     @Transactional
     public EventParticipantResponse join(Authentication authentication, UUID eventId) {
         User user = userService.getOrCreateCurrentUser(authentication);
-        Event event = eventRepository.findById(eventId)
+        Event event = eventRepository.findByIdForUpdate(eventId)
                 .orElseThrow(() -> new EventNotFoundException(eventId));
         if (event.getStatus() != EventStatus.PUBLISHED) {
             throw EventNotJoinableException.notPublished(eventId, event.getStatus());
