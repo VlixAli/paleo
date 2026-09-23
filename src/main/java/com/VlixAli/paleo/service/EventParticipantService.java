@@ -1,6 +1,7 @@
 package com.VlixAli.paleo.service;
 
 import com.VlixAli.paleo.dto.response.EventParticipantResponse;
+import com.VlixAli.paleo.dto.response.ParticipantResponse;
 import com.VlixAli.paleo.entity.Event;
 import com.VlixAli.paleo.entity.EventParticipant;
 import com.VlixAli.paleo.entity.EventStatus;
@@ -13,6 +14,8 @@ import com.VlixAli.paleo.mapper.EventParticipantMapper;
 import com.VlixAli.paleo.repository.EventParticipantRepository;
 import com.VlixAli.paleo.repository.EventRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,5 +68,15 @@ public class EventParticipantService {
         if (deleted == 0) {
             throw new NotParticipantException(eventId);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ParticipantResponse> getEventParticipants(UUID eventId, Pageable pageable) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EventNotFoundException(eventId));
+        if (event.getStatus() != EventStatus.PUBLISHED) {
+            throw EventNotJoinableException.notPublished(eventId, event.getStatus());
+        }
+        return participantRepository.findParticipantResponses(eventId, pageable);
     }
 }
