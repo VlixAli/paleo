@@ -7,6 +7,7 @@ import com.VlixAli.paleo.entity.EventStatus;
 import com.VlixAli.paleo.entity.User;
 import com.VlixAli.paleo.exception.EventNotFoundException;
 import com.VlixAli.paleo.mapper.EventMapperImpl;
+import com.VlixAli.paleo.repository.EventParticipantRepository;
 import com.VlixAli.paleo.repository.EventRepository;
 import com.VlixAli.paleo.service.EventService;
 import com.VlixAli.paleo.service.UserService;
@@ -32,6 +33,9 @@ class EventServiceTest {
 
     @Mock
     private EventRepository eventRepository;
+
+    @Mock
+    private EventParticipantRepository participantRepository;
 
     @Spy
     private EventMapperImpl eventMapper = new EventMapperImpl();
@@ -67,6 +71,35 @@ class EventServiceTest {
                 .thenReturn(Optional.of(eventOwnedBy(owner, EventStatus.CANCELLED)));
 
         assertThat(eventService.publish(null, UUID.randomUUID()).status()).isEqualTo(EventStatus.PUBLISHED);
+    }
+
+    @Test
+    void publishCreatesOwnerParticipant() {
+        var owner = userWithId(UUID.randomUUID());
+        var event = eventOwnedBy(owner, EventStatus.DRAFT);
+        when(userService.getOrCreateCurrentUser(null)).thenReturn(owner);
+        when(eventRepository.findById(any(UUID.class))).thenReturn(Optional.of(event));
+        when(participantRepository.existsByEventIdAndUserId(event.getId(), owner.getId())).thenReturn(false);
+
+        eventService.publish(null, event.getId());
+
+        var saved = ArgumentCaptor.forClass(com.VlixAli.paleo.entity.EventParticipant.class);
+        org.mockito.Mockito.verify(participantRepository).save(saved.capture());
+        assertThat(saved.getValue().getEvent()).isEqualTo(event);
+        assertThat(saved.getValue().getUser()).isEqualTo(owner);
+    }
+
+    @Test
+    void publishSkipsParticipantWhenAlreadyJoined() {
+        var owner = userWithId(UUID.randomUUID());
+        var event = eventOwnedBy(owner, EventStatus.DRAFT);
+        when(userService.getOrCreateCurrentUser(null)).thenReturn(owner);
+        when(eventRepository.findById(any(UUID.class))).thenReturn(Optional.of(event));
+        when(participantRepository.existsByEventIdAndUserId(event.getId(), owner.getId())).thenReturn(true);
+
+        eventService.publish(null, event.getId());
+
+        org.mockito.Mockito.verify(participantRepository, org.mockito.Mockito.never()).save(any());
     }
 
     @Test
