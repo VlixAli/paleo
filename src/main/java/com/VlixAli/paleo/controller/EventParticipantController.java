@@ -25,4 +25,10 @@ public class EventParticipantController {
     public EventParticipantResponse join(Authentication authentication, @PathVariable UUID id) {
         return eventParticipantService.join(authentication, id);
     }
+
+    @PostMapping("/{id}/leave")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void leave(Authentication authentication, @PathVariable UUID id) {
+        eventParticipantService.leave(authentication, id);
+    }
 }

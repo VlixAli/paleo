@@ -7,6 +7,8 @@ import com.VlixAli.paleo.entity.EventStatus;
 import com.VlixAli.paleo.entity.User;
 import com.VlixAli.paleo.exception.EventNotFoundException;
 import com.VlixAli.paleo.exception.EventNotJoinableException;
+import com.VlixAli.paleo.exception.NotParticipantException;
+import com.VlixAli.paleo.exception.OwnerCannotLeaveException;
 import com.VlixAli.paleo.mapper.EventParticipantMapper;
 import com.VlixAli.paleo.repository.EventParticipantRepository;
 import com.VlixAli.paleo.repository.EventRepository;
@@ -46,5 +48,22 @@ public class EventParticipantService {
                 .user(user)
                 .build());
         return participantMapper.toResponse(saved);
+    }
+
+    @Transactional
+    public void leave(Authentication authentication, UUID eventId) {
+        User user = userService.getOrCreateCurrentUser(authentication);
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new EventNotFoundException(eventId));
+        if (event.getOwner().getId().equals(user.getId())) {
+            throw new OwnerCannotLeaveException(eventId);
+        }
+        if (event.getStatus() != EventStatus.PUBLISHED) {
+            throw EventNotJoinableException.notPublished(eventId, event.getStatus());
+        }
+        int deleted = participantRepository.deleteByEventIdAndUserId(eventId, user.getId());
+        if (deleted == 0) {
+            throw new NotParticipantException(eventId);
+        }
     }
 }

@@ -3,6 +3,8 @@ package com.VlixAli.paleo.handler;
 import com.VlixAli.paleo.dto.response.ErrorResponse;
 import com.VlixAli.paleo.exception.EventNotFoundException;
 import com.VlixAli.paleo.exception.EventNotJoinableException;
+import com.VlixAli.paleo.exception.NotParticipantException;
+import com.VlixAli.paleo.exception.OwnerCannotLeaveException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -52,6 +54,26 @@ public class GlobalExceptionHandler {
                 .status("failed")
                 .messages(List.of(exception.getMessage()))
                 .statusCode(HttpStatus.CONFLICT.value())
+                .build();
+    }
+
+    @ExceptionHandler(NotParticipantException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ErrorResponse handleNotParticipantException(NotParticipantException exception){
+        return ErrorResponse.builder()
+                .status("failed")
+                .messages(List.of(exception.getMessage()))
+                .statusCode(HttpStatus.CONFLICT.value())
+                .build();
+    }
+
+    @ExceptionHandler(OwnerCannotLeaveException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ErrorResponse handleOwnerCannotLeaveException(OwnerCannotLeaveException exception){
+        return ErrorResponse.builder()
+                .status("failed")
+                .messages(List.of(exception.getMessage()))
+                .statusCode(HttpStatus.FORBIDDEN.value())
                 .build();
     }
 
